@@ -1,5 +1,6 @@
 from app import challenge_3_constants as consts
 
+
 def process_sokoban_move(board=None, move=None):
 
     def _board_as_grid(board):
@@ -27,30 +28,57 @@ def process_sokoban_move(board=None, move=None):
                     return line, square, square_content
         raise RuntimeError('Player not found!')
 
-    def _whats_above(line, square):
-        return int(line-1), int(square), grid[line-1][square]
-
-    def _whats_below(line, square):
-        return int(line+1), int(square), grid[line+1][square]
-
-    def _whats_left(line, square):
-        return int(line), int(square-1), grid[line][square-1]
-
-    def _whats_right(line, square):
-        return int(line), int(square+1), grid[line][square+1]
-
     def _whats_at(line, square, move):
-        if move == consts.UP:
-            return _whats_above(line, square)
-        elif move == consts.DOWN:
-            return _whats_below(line, square)
-        elif move == consts.LEFT:
-            return _whats_left(line, square)
-        elif move == consts.RIGHT:
-            return _whats_right(line, square)
+        try:
+            if move == consts.UP:
+                return int(line - 1), int(square), grid[line - 1][square]
+            elif move == consts.DOWN:
+                return int(line + 1), int(square), grid[line + 1][square]
+            elif move == consts.LEFT:
+                return int(line), int(square - 1), grid[line][square - 1]
+            elif move == consts.RIGHT:
+                return int(line), int(square + 1), grid[line][square + 1]
+        except IndexError:
+            return -1, -1, -1
+
+    def _whats_at(line, square):
+        try:
+            return grid(line, square)
+        except IndexError:
+            raise IndexError('Out of bounds! Square at line {}, square {} does not exists'.format(line, square))
 
     def _write(line, square, character):
         grid[line][square] = character
+
+    def _get_coords(line, square, move):
+        new_line = line
+        new_square = square
+        if move == consts.UP:
+            new_line = line -1
+        elif move == consts.DOWN:
+            new_line = line + 1
+        elif move == consts.LEFT:
+            new_square = square - 1
+        elif move == consts.RIGHT:
+            new_square = square + 1
+        return new_line, new_square
+
+    def _move(from_line, from_square, move):
+
+        to_line, to_square = _get_coords(from_line, from_square, move)
+
+        try:
+            if _whats_at(to_line, to_square) == consts.WALL:
+                return False
+        except IndexError:
+            return False
+
+        if _whats_at(from_line, from_square) == (consts.PLAYER_ON_STORAGE_LOCATION or consts.BOX_ON_STORAGE_LOCATION):
+            from_content = consts.STORAGE_LOCATION
+        else:
+            from_content = consts.EMPTY
+        if _whats_at(to_line, to_square) == (consts.BOX or consts.BOX_ON_STORAGE_LOCATION):
+            _move(to_line, to_square, move)
 
     grid = _board_as_grid(board)
 
