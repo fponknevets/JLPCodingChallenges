@@ -20,30 +20,9 @@ def process_sokoban_move(board=None, move=None):
             board.append(line_content)
         return board
 
-    def _find_player():
-        for line, line_content in enumerate(grid):
-            for square, square_content in enumerate(line_content):
-                if square_content == (consts.PLAYER or
-                               consts.PLAYER_ON_STORAGE_LOCATION):
-                    return line, square, square_content
-        raise RuntimeError('Player not found!')
-
-    def _whats_at(line, square, move):
-        try:
-            if move == consts.UP:
-                return int(line - 1), int(square), grid[line - 1][square]
-            elif move == consts.DOWN:
-                return int(line + 1), int(square), grid[line + 1][square]
-            elif move == consts.LEFT:
-                return int(line), int(square - 1), grid[line][square - 1]
-            elif move == consts.RIGHT:
-                return int(line), int(square + 1), grid[line][square + 1]
-        except IndexError:
-            return -1, -1, -1
-
     def _whats_at(line, square):
         try:
-            return grid(line, square)
+            return grid[line][square]
         except IndexError:
             raise IndexError('Out of bounds! Square at line {}, square {} does not exists'.format(line, square))
 
@@ -63,63 +42,71 @@ def process_sokoban_move(board=None, move=None):
             new_square = square + 1
         return new_line, new_square
 
+    def _get_locations():
+        for line, line_content in enumerate(grid):
+            for square, square_content in enumerate(line_content):
+                if square_content in (consts.PLAYER, consts.PLAYER_ON_STORAGE_LOCATION):
+                    player_location = [line, square]
+                if square_content in (consts.BOX_ON_STORAGE_LOCATION, consts.PLAYER_ON_STORAGE_LOCATION, consts.STORAGE_LOCATION):
+                    storage_locations.append([line, square])
+        return player_location, storage_locations
+
     def _move(from_line, from_square, move):
-
         to_line, to_square = _get_coords(from_line, from_square, move)
-
         try:
+            # what should we write in the square we are moving from once we move
+            if _whats_at(from_line, from_square) in (consts.PLAYER_ON_STORAGE_LOCATION, consts.BOX_ON_STORAGE_LOCATION):
+                from_content_to_write = consts.STORAGE_LOCATION
+            else:
+                from_content_to_write = consts.EMPTY
+
+            # scenario - we are trying to move to a wall
             if _whats_at(to_line, to_square) == consts.WALL:
                 return False
+
+            # scenario - we are trying to move to a box
+            if _whats_at(to_line, to_square) in (consts.BOX, consts.BOX_ON_STORAGE_LOCATION):
+                if not _move(to_line, to_square, move):
+                    return False
+
+            # scenario - we are trying to move to a storage location
+            if [to_line, to_square] in storage_locations:
+                if _whats_at(from_line, from_square) == consts.PLAYER:
+                    _write(to_line, to_square, consts.PLAYER_ON_STORAGE_LOCATION)
+                    _write(from_line, from_square, consts.EMPTY)
+                if _whats_at(from_line, from_square) == consts.PLAYER_ON_STORAGE_LOCATION:
+                    _write(to_line, to_square, consts.PLAYER_ON_STORAGE_LOCATION)
+                    _write(from_line, from_square, consts.STORAGE_LOCATION)
+                if _whats_at(from_line, from_square) == consts.BOX:
+                    _write(to_line, to_square, consts.BOX_ON_STORAGE_LOCATION)
+                    _write(from_line, from_square, consts.EMPTY)
+                if _whats_at(from_line, from_square) == consts.BOX_ON_STORAGE_LOCATION:
+                    _write(to_line, to_square, consts.BOX_ON_STORAGE_LOCATION)
+                    _write(from_line, from_square, consts.STORAGE_LOCATION)
+
+            # scenario - we are trying to move to a place that is empty
+            if _whats_at(to_line, to_square) == consts.EMPTY:
+                _write(to_line, to_square, grid[from_line][from_square])
+                _write(from_line, from_square, from_content_to_write)
+
         except IndexError:
+            # scenario - we are trying to move to a non-existent square
             return False
 
-        if _whats_at(from_line, from_square) == (consts.PLAYER_ON_STORAGE_LOCATION or consts.BOX_ON_STORAGE_LOCATION):
-            from_content = consts.STORAGE_LOCATION
-        else:
-            from_content = consts.EMPTY
-        if _whats_at(to_line, to_square) == (consts.BOX or consts.BOX_ON_STORAGE_LOCATION):
-            _move(to_line, to_square, move)
+        return True
 
     grid = _board_as_grid(board)
 
-    try:
-        player_line, player_square, player_square_content = _find_player()
-    except RuntimeError:
-        print('Player not found!')
-        return False
+    player_location = []
+    storage_locations = []
 
-    target_line, target_square, target_content = _whats_at(player_line, player_square, move)
-
-    if target_content == consts.WALL:
+    player_location, storage_locations = _get_locations()
+    if not player_location:
         return board
 
-    if target_content == consts.BOX:
-        passed_box_line, passed_box_square, passed_box_content = _whats_at(target_line, target_square, move)
-        if passed_box_content == consts.WALL:
-            return board
-
-        if passed_box_content == consts.EMPTY:
-            _write(passed_box_line, passed_box_square, consts.BOX)
-            _write(target_line, target_square, consts.PLAYER)
-            _write(player_line, player_square, consts.EMPTY)
-        elif passed_box_content == consts.STORAGE_LOCATION:
-            _write(passed_box_line, passed_box_square, consts.BOX_ON_STORAGE_LOCATION)
-            _write(target_line, target_square, consts.PLAYER)
-            _write(player_line, player_square, consts.EMPTY)
+    if _move(player_location[consts.LINE], player_location[consts.SQUARE], move):
         return _grid_as_board(grid)
+    else:
+        return board
 
-    if target_content == consts.STORAGE_LOCATION:
-        _move_player()
-
-    if target_content == consts.EMPTY:
-        grid[target_line][target_square] = consts.PLAYER
-    elif target_content == consts.STORAGE_LOCATION:
-        grid[target_line][target_square] = consts.PLAYER_ON_STORAGE_LOCATION
-
-    if grid[player_line][player_square] == consts.PLAYER:
-        grid[player_line][player_square] = consts.EMPTY
-    elif grid[player_line][player_square] == consts.PLAYER_ON_STORAGE_LOCATION:
-        grid[player_line][player_square] = consts.PLAYER_ON_STORAGE_LOCATION
-
-    return _grid_as_board(grid)
 

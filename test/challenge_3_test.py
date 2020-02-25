@@ -1,5 +1,6 @@
 import unittest
-from challenge_3 import process_sokoban_move
+
+from app.challenge_3 import process_sokoban_move
 
 
 class TestChallenge3(unittest.TestCase):
@@ -99,6 +100,36 @@ class TestChallenge3(unittest.TestCase):
                      "#         * #",
                      "#     pB b  #",
                      "# *         #",
+                     "#############",]
+        self.assertEqual(process_sokoban_move(board_in, move), board_out)
+
+    def test_cannot_push_box_into_wall(self):
+        board_in = ["#############",
+                    "#         * #",
+                    "#     b*  pb#",
+                    "# *         #",
+                    "#############",]
+        move = 'R'
+        board_out = ["#############",
+                     "#         * #",
+                     "#     b*  pb#",
+                     "# *         #",
+                     "#############",]
+        self.assertEqual(process_sokoban_move(board_in, move), board_out)
+
+    def test_can_push_two_boxes(self):
+        board_in = ["#############",
+                    "#     p   * #",
+                    "#     B*   b#",
+                    "# *   b     #",
+                    "# *         #",
+                    "#############",]
+        move = 'D'
+        board_out = ["#############",
+                     "#         * #",
+                     "#     P*   b#",
+                     "# *   b     #",
+                     "# *   b     #",
                      "#############",]
         self.assertEqual(process_sokoban_move(board_in, move), board_out)
 
