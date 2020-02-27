@@ -7,7 +7,7 @@ def process_sokoban_move(board=None, move=None):
         grid = []
         for line, line_content in enumerate(board):
             grid.append([])
-            for square, square_content in enumerate(line_content):
+            for square_content in line_content:
                 grid[line].append(square_content)
         return grid
 
@@ -51,43 +51,46 @@ def process_sokoban_move(board=None, move=None):
                     storage_locations.append([line, square])
         return player_location, storage_locations
 
-    def _move(from_line, from_square, move):
-        to_line, to_square = _get_coords(from_line, from_square, move)
-        try:
-            # what should we write in the square we are moving from once we move
-            if _whats_at(from_line, from_square) in (consts.PLAYER_ON_STORAGE_LOCATION, consts.BOX_ON_STORAGE_LOCATION):
-                from_content_to_write = consts.STORAGE_LOCATION
-            else:
-                from_content_to_write = consts.EMPTY
+    def _store(char):
+        return chr(ord(char) - 32)
 
-            # scenario - we are trying to move to a wall
+    def _unstore(char):
+        return chr(ord(char) + 32)
+
+    def _is_storage(line, square):
+        return [line, square] in storage_locations
+
+    def _move(from_line, from_square, direction):
+        to_line, to_square = _get_coords(from_line, from_square, direction)
+        try:
+            # if the target location is wall
             if _whats_at(to_line, to_square) == consts.WALL:
                 return False
 
-            # scenario - we are trying to move to a box
-            if _whats_at(to_line, to_square) in (consts.BOX, consts.BOX_ON_STORAGE_LOCATION):
-                if not _move(to_line, to_square, move):
+            # if the target location is box (or box on storage)
+            if _whats_at(to_line, to_square) in [consts.BOX, consts.BOX_ON_STORAGE_LOCATION]:
+                if not _move(to_line, to_square, direction):
                     return False
 
-            # scenario - we are trying to move to a storage location
-            if [to_line, to_square] in storage_locations:
-                if _whats_at(from_line, from_square) == consts.PLAYER:
-                    _write(to_line, to_square, consts.PLAYER_ON_STORAGE_LOCATION)
-                    _write(from_line, from_square, consts.EMPTY)
-                if _whats_at(from_line, from_square) == consts.PLAYER_ON_STORAGE_LOCATION:
-                    _write(to_line, to_square, consts.PLAYER_ON_STORAGE_LOCATION)
-                    _write(from_line, from_square, consts.STORAGE_LOCATION)
-                if _whats_at(from_line, from_square) == consts.BOX:
-                    _write(to_line, to_square, consts.BOX_ON_STORAGE_LOCATION)
-                    _write(from_line, from_square, consts.EMPTY)
-                if _whats_at(from_line, from_square) == consts.BOX_ON_STORAGE_LOCATION:
-                    _write(to_line, to_square, consts.BOX_ON_STORAGE_LOCATION)
-                    _write(from_line, from_square, consts.STORAGE_LOCATION)
+            # if target location is vacant storage
+            if _whats_at(to_line, to_square) == consts.STORAGE_LOCATION:
+                if _whats_at(from_line, from_square) in [consts.PLAYER, consts.BOX]:
+                    _write(to_line, to_square, _store(grid[from_line][from_square]))
+                else:
+                    _write(to_line, to_square, grid[from_line][from_square])
 
-            # scenario - we are trying to move to a place that is empty
+            # if target location is empty
             if _whats_at(to_line, to_square) == consts.EMPTY:
-                _write(to_line, to_square, grid[from_line][from_square])
-                _write(from_line, from_square, from_content_to_write)
+                if _whats_at(from_line, from_square) in (consts.PLAYER_ON_STORAGE_LOCATION, consts.BOX_ON_STORAGE_LOCATION):
+                    _write(to_line, to_square, _unstore(grid[from_line][from_square]))
+                else:
+                    _write(to_line, to_square, grid[from_line][from_square])
+
+            # finally update the source location
+            if [from_line, from_square] in storage_locations:
+                _write(from_line, from_square, consts.STORAGE_LOCATION)
+            else:
+                _write(from_line, from_square, consts.EMPTY)
 
         except IndexError:
             # scenario - we are trying to move to a non-existent square

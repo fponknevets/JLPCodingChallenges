@@ -103,7 +103,21 @@ class TestChallenge3(unittest.TestCase):
                      "#############",]
         self.assertEqual(process_sokoban_move(board_in, move), board_out)
 
-    def test_cannot_push_box_into_wall(self):
+    def test_can_push_box_off_storage_square(self):
+        board_in = ["#############",
+                    "#         * #",
+                    "#     pB b  #",
+                    "# *         #",
+                    "#############",]
+        move = 'R'
+        board_out = ["#############",
+                     "#         * #",
+                     "#      Pbb  #",
+                     "# *         #",
+                     "#############",]
+        self.assertEqual(process_sokoban_move(board_in, move), board_out)
+
+    def test_cannot_push_box_thru_wall(self):
         board_in = ["#############",
                     "#         * #",
                     "#     b*  pb#",
