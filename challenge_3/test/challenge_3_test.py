@@ -1,6 +1,6 @@
 import unittest
 
-from app.challenge_3 import process_sokoban_move
+from challenge_3.app.challenge_3 import process_sokoban_move
 
 
 class TestChallenge3(unittest.TestCase):

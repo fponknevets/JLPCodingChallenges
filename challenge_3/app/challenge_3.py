@@ -1,4 +1,4 @@
-from app import challenge_3_constants as consts
+from challenge_3.app import challenge_3_constants as consts
 
 
 def process_sokoban_move(board=None, move=None):
