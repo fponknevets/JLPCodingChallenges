@@ -22,7 +22,7 @@ def sort_vouchers(voucher_string):
         return voucher[STATUS] in active_statuses
 
     def _is_non_active(voucher):
-        return voucher[STATUS] not in active_statuses
+        return voucher[STATUS] in non_active_statuses
 
     def _get_vouchers(voucher_string):
         if voucher_string in ('', None):
@@ -33,6 +33,14 @@ def sort_vouchers(voucher_string):
             voucher=voucher_data.split(':')
             vouchers.append(voucher)
         return vouchers
+
+    def _build_return_string(voucher_list):
+        vouchers = []
+        for voucher in voucher_list:
+            current_voucher_string = ':'.join(voucher)
+            vouchers.append(current_voucher_string)
+        return ','.join(vouchers)
+
 
     try:
         vouchers = _get_vouchers(voucher_string)
@@ -46,4 +54,4 @@ def sort_vouchers(voucher_string):
     _sort_list_by_keys(active_vouchers, ((ID, False), (STATUS, False), (END_DATE, False)))
     _sort_list_by_keys(non_active_vouchers, ((ID, False), (STATUS, False), (END_DATE, True)))
 
-    return active_vouchers + non_active_vouchers
+    return _build_return_string(active_vouchers + non_active_vouchers)
