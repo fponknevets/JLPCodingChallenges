@@ -1,6 +1,3 @@
-from operator import itemgetter
-
-
 def sort_vouchers(voucher_string):
 
     END_DATE = 0
@@ -42,9 +39,6 @@ def sort_vouchers(voucher_string):
     except RuntimeError as err:
         print("Runtime error: {}".format(err))
         raise
-
-
-
 
     active_vouchers = list(filter(_is_active, vouchers))
     non_active_vouchers = list(filter(_is_non_active, vouchers))
